@@ -25,7 +25,7 @@
 1. Clone the repository on your system
 2. run make gunzip
 3. if s3 bucket is not already present then issue: make make-bucket
-4. open the makefile and provide add the below details:
+4. open the makefile and provide the below details:
 HADOOP_PATH=<your hadoop home>
 
 MY_CLASSPATH=<your classpath>
