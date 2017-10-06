@@ -27,12 +27,19 @@
 3. if s3 bucket is not already present then issue: make make-bucket
 4. open the makefile and provide add the below details:
 HADOOP_PATH=<your hadoop home>
+
 MY_CLASSPATH=<your classpath>
+
 jar.name=MainA2.jar
+
 jar.path=target/$(jar.name)
+
 local.input=input/books
+
 local.logs=<path to where you want the logs>
+
 local.output=<path to output directory>
+
 job.name=KNeighborhood
 
 aws.emr.release=<your emr version eg: emr-5.8.0>
