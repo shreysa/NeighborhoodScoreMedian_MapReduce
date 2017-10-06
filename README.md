@@ -44,6 +44,7 @@ aws.output=<output folder>
 aws.log.dir=<log folder>
 aws.num.nodes=<number of nodes>
 aws.instance.type=<instance type eg- m3.xlarge>
+
 5. to upload data to s3 input dir: upload-input-aws
 6. on your local hadoop set up issue: make clean
   make build
