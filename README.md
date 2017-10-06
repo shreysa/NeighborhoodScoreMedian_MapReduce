@@ -43,13 +43,20 @@ local.output=<path to output directory>
 job.name=KNeighborhood
 
 aws.emr.release=<your emr version eg: emr-5.8.0>
+
 aws.region=<your aws region>
+
 aws.bucket.name=<your s3 bucket name>
+
 aws.subnet.id=<your-subnet-id>
+
 aws.input=<input folder name on s3>
 aws.output=<output folder>
+
 aws.log.dir=<log folder>
+
 aws.num.nodes=<number of nodes>
+
 aws.instance.type=<instance type eg- m3.xlarge>
 
 5. to upload data to s3 input dir: upload-input-aws
