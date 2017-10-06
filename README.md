@@ -18,7 +18,7 @@
 
 `input/big-corpus` - contains an empty folder where the reviewer can place their big corpus files
 
-`output` - Contains csv files with the timings of Map reduce runs, comparison information of map reduce vs thraeded file and results of program  with threads (1-16) with k value of 2. These files are used in the generation of report.
+`observations` - Contains csv files with the timings of Map reduce runs, log files of runs
 
 
 ###Instructions for building and running the program
