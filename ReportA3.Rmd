@@ -28,68 +28,83 @@ EBS OPT Enhanced Networking       | Yes
 
 ### Summary of the design of evaluated program
 
-The current implementation involves chaining of 2 map reduce jobs. The first map job emits the letter occurances while the reduce job calculates the total letter occurances and then computes the scores as per the requirements given in assignment A0. It then dumps this data into an intermediate file. Since there can be multiple reducers we can have multiple intermediate files, these intermediate files are then merged to provide input to the second map job called the KNeighborhoodMapper. Depending upon the K value passed, "K Ghost words"" are added to the beginning and end of each record sent to mapper, then the mapper starts processIng the file at the k'th word and stops k words before the end of the record. This overlap between records allows for correct kneighbor score calculation. In this approach only 1 record worth of memory is occupied per mapper, The second map job then reads and calculates the word scores of the input files and caches in a hashmap while the second reduce job called the KNeighborhoodReducer calculates the KNeighborhood Median. 
+The current implementation involves chaining of 2 map reduce jobs. The first map job emits the letter occurances while the reduce job calculates the total letter occurances and then computes the scores as per the requirements given in assignment A0. It then dumps this data into an intermediate file. Since there can be multiple reducers we can have multiple intermediate files, these intermediate files are then merged to provide input to the second map job called the KNeighborhoodMapper. Depending upon the K value passed, "K Ghost words"" are added to the beginning and end of each record sent to mapper, then the mapper starts processIng the file at the k'th word and stops k words before the end of the record. This overlap between records allows for correct kneighbor score calculation. In this approach only 1 record worth of memory is occupied per mapper, The second map job then reads and calculates the word scores of the input files and caches in a hashmap while the second reduce job called the KNeighborhoodReducer calculates the KNeighborhood Median. I did the following changes to my code to support calculation of Median.
+
+ private float computeMedian(Iterable<FloatWritable> values){
+            List<Float> neighborhoodScores = new ArrayList<Float>();
+
+            for (FloatWritable val: values) {
+                neighborhoodScores.add(val.get());
+            }
+            Collections.sort(neighborhoodScores);
+
+            int size = neighborhoodScores.size();
+            int medianIndex = 0;
+
+            if(size % 2 != 0)medianIndex =  (size + 1)/2 - 1;
+            else  medianIndex = size/2;
+            return neighborhoodScores.get(medianIndex);
+        }
+
+public void reduce(Text key, Iterable<FloatWritable> values, Context context)
+                throws IOException, InterruptedException {
+
+            float finalScore = computeMedian(values);
+            result.set(finalScore);
+            context.write(key, result);
+        }
+        
+The current code has another method to compute Mean as well. By just changing call from computeMedian to computeMean will generate the mean instead.
 
 #### Analysis
 
-##### Table 1: Map reduce iterations for K=2 for A2 dataset on 2 nodes
+##### Table 1: Map reduce iterations for K=2 for A2 dataset on 2 nodes and 4 nodes
 
 ```{r}
 library(ggplot2)
-Map_reduce_run<-read.csv("output/Map_reduce_run.csv")
+Map_reduce_run<-read.csv("observations/aws_emr_data.csv")
 knitr::kable(Map_reduce_run)
 ```
 
-The above table represents the total time taken and total average time of 3 runs of map reduce job in seconds. Each run takes about 99 minutes to finish.
+The above table represents the total time taken for the big corpus when run on 2 and 4 nodes, it also presents the data for total average time of 3 runs of map reduce job on small corpus in minutes. The 2 node run took 158 minutes and 4 node run took 145 minutes for the big corpus and 11 minutes on 2 nodes and 8 minutes on 4 nodes for the small corpus. 
 
-##### Table 1: Map reduce iterations for K=2 for A2 dataset on 4 nodes
 
-```{r}
-library(ggplot2)
-Map_reduce_run<-read.csv("output/Map_reduce_run.csv")
-knitr::kable(Map_reduce_run)
-```
-
-##### Plot 1: Total Time Taken in seconds vs Num of runs
+##### Plot 1: Total Time Taken in minutes vs Num of nodes 
 
 ```{r}
-ggplot(Map_reduce_run, aes(x=Runs, y=total_time_taken, color="Total Average Time")) + 
+ggplot(Map_reduce_run, aes(x=Number_of_Nodes, y=Time_Taken_big_corpus_in_mins, color="Total Time")) + 
   geom_point() +
-  ylab("Total time taken by map reduce job in seconds") + 
+  ylab("Total time taken by map reduce job in minutes") + 
+  xlab("Number of nodes") + 
+  scale_y_continuous(breaks=seq(130,170,5),  limits = c(130,170))+
+  scale_x_continuous(breaks=seq(0,5,1), limits = c(0,5))
+```
+
+Plot 1 is the graphical representation of Table 1. The graph shows that each job takes about 99 to 100 minutes to complete on the big dataset provided for assignment A2. As mentioned above in the summary of design, there are 2 map reduce jobs chained to get the KNeighborhood median scores.
+
+
+##### Table 2: Map reduce iterations for K=2 for A2 dataset on hadoop set up on local machine
+
+```{r}
+Map_reduce_run_local<-read.csv("observations/Map_reduce_run_local.csv")
+knitr::kable(Map_reduce_run)
+```
+The Table 2 is from A2 assignment run on big_corpus on cloudera hadoop set up on my machine.
+
+
+##### Plot 2: Total Time Taken in minutes vs Num of runs 
+
+```{r}
+ggplot(Map_reduce_run_local, aes(x=Runs, y=total_time_taken, color="Total Average Time")) + 
+  geom_point() +
+  ylab("Total time taken by map reduce job in minutes") + 
   xlab("Number of runs") + 
-  scale_y_continuous(breaks=seq(5750,6250,250),  limits = c(5750,6250))+
-  scale_x_continuous(breaks=seq(0,4,1), limits = c(0,4))
+  scale_y_continuous(breaks=seq(80,170,5),  limits = c(80,170))+
+  scale_x_continuous(breaks=seq(0,5,1), limits = c(0,5))
 ```
 
-Plot 1 is the graphical representation of Table 1. The graph shows that each job takes about 99 to 100 minutes to complete on the big dataset provided for assignment A2. As mentioned above in the summary of design, there are 2 map reduce jobs chained to get the KNeighborhood mean scores.
-
-##### Plot 2: Total Average time in seconds vs Num Threads (k = 2)
-
-```{r}
-performance_data_k2<-read.csv("output/results_kval_2.csv")
-ggplot(performance_data_k2, aes(x=num_threads, y=total_avg_s, color="Total Average Time")) + 
-  geom_point() +
-  ylab("Total Average Time in seconds (compared to serial version)") + 
-  xlab("Number of threads") + 
-  scale_y_continuous(breaks=seq(0,60,5), limits = c(5, 60)) +
-  scale_x_continuous(breaks=seq(0,16,1), limits = c(0,16))
-```
-
-Plot 2 represents the total average time taken by sequential and threaded versions plotted against number of threads when K value is 2. As per Amdahl's law, the theoretical speedup in latency of the execution of a program in function of the number of processors executing it, for different number of threads/processors. The speedup is limited by the serial part of the program. For example, if 95% of the program can be parallelized, the theoretical maximum speedup using parallel computing would be 20 times, likewise if 50% of the program can be parallelized - the therotical maximum speedup using parallel computing would be 2 times the time taken by serial version. Plot 2 thereby signifies the same speed up representations. (Answer to point 2 in assignment)
-(Above statement taken from https://en.wikipedia.org/wiki/Amdahl%27s_law)
-
-##### Table 2: Dataset size and Total time taken comparison
-
-```{r}
-library(ggplot2)
-comparison<-read.csv("output/dataset_time_comparison.csv")
-knitr::kable(comparison)
-```
-
-
-The A2 dataset consists of 16 files of about 541 MB each for a total corpus size of 8656 MB, the A0-A1 dataset is of 74 MB. The A2 dataset is therefore ~117 times bigger than the A0-A1 dataset. The average time taken for a map reduce job on the A0-A1 dataset is ~392 seconds and the average time for a job on the A2 dataset is 5972 seconds, therefore the A2 job took ~15 times the time taken for the A0-A1 job even though the dataset is about ~117 times bigger. This demonstarates the power of map reduce over very very large datasets.
+Plot 2 is the graphical representation of Table 2. The graph shows that each job takes about 99 to 100 minutes to complete on the big dataset provided for assignment A2. As mentioned above in the summary of design, there are 2 map reduce jobs chained to get the KNeighborhood mean scores.
 
 ### Conclusion
 
-Over the course of this assignment, it was clear that writing a map reduce program to handle large dataset problems is indeed easier as compared to the same task done by threads. On running this developed application over both the dataset provided for A0 and A2, the output generated appear to be the same that suggests that the A2 dataset is multiple copies of A0-A1 dataset. 
-However, it is necassary to understand the API, architecture and limitations of HADOOP (map reduce) to fully exploit this powerful framework.
+The jobs were run on AWS EMR clusters and it was noted that the actual run time on EMR was greater than the one recieved on hadoop. There was marginal difference between the 4 node and 2 node run time. Also, a few changes were needed to be done in the set up method of the reducers in order to to be able to handle multiple reducers. The scalability is linear, as the corpus size increases the run time also increases, however the EMR machines run slower than what their configuration statistics should actually implement.
