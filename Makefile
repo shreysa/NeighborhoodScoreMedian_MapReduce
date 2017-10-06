@@ -1,4 +1,4 @@
-# Got the makefile to run on aws from Prof. Merik's class students
+)# Got the makefile to run on aws from Prof. Merik's class students
 HADOOP_PATH=/usr/lib/hadoop
 MY_CLASSPATH=`yarn classpath`
 jar.name=MainA2.jar
@@ -40,7 +40,7 @@ jar:
 	
 # Removes local output directory.
 clean-local-output:
-	rm -rf ${local.output}*
+	rm -rf $(local.output)*
 
 clean:
 	rm -rf ./target
@@ -52,43 +52,43 @@ clean:
 
 # Create S3 bucket.
 make-bucket:
-	aws s3 mb s3://${aws.bucket.name}
+	aws s3 mb s3://$(aws.bucket.name)
 
 # Upload data to S3 input dir.
 upload-input-aws: make-bucket
-	aws s3 sync ${local.input} s3://${aws.bucket.name}/${aws.input}
+	aws s3 sync $(local.input) s3://$(aws.bucket.name)/$(aws.input)
 	
 # Delete S3 output dir.
 delete-output-aws:
-	aws s3 rm s3://${aws.bucket.name}/ --recursive --exclude "*" --include "${aws.output}*"
+	aws s3 rm s3://$(aws.bucket.name)/ --recursive --exclude "*" --include "$(aws.output)*"
 
 # Upload application to S3 bucket.
 upload-app-aws:
-	aws s3 cp ${jar.path} s3://${aws.bucket.name}
+	aws s3 cp $(jar.path) s3://$(aws.bucket.name)
 
 # Main EMR launch.
 cloud: jar upload-app-aws delete-output-aws
 	aws emr create-cluster \
 		--name "In Mapper Cluster" \
-		--release-label ${aws.emr.release} \
-		--instance-groups '[{"InstanceCount":${aws.num.nodes},"InstanceGroupType":"CORE","InstanceType":"${aws.instance.type}"},{"InstanceCount":1,"InstanceGroupType":"MASTER","InstanceType":"${aws.instance.type}"}]' \
+		--release-label $(aws.emr.release) \
+		--instance-groups '[("InstanceCount":$(aws.num.nodes),"InstanceGroupType":"CORE","InstanceType":"$(aws.instance.type)"),("InstanceCount":1,"InstanceGroupType":"MASTER","InstanceType":"$(aws.instance.type)")]' \
 	    --applications Name=Hadoop \
-	    --steps '[{"Args":["${job.name}","s3://${aws.bucket.name}/${aws.input}","s3://${aws.bucket.name}/${aws.output}"],"Type":"CUSTOM_JAR","Jar":"s3://${aws.bucket.name}/${jar.name}","ActionOnFailure":"TERMINATE_CLUSTER","Name":"Custom JAR"}]' \
-		--log-uri s3://${aws.bucket.name}/${aws.log.dir} \
+	    --steps '[("Args":["$(job.name)","s3://$(aws.bucket.name)/$(aws.input)","s3://$(aws.bucket.name)/$(aws.output)", NEIGHBORS=2],"Type":"CUSTOM_JAR","Jar":"s3://$(aws.bucket.name)/$(jar.name)","ActionOnFailure":"TERMINATE_CLUSTER","Name":"Custom JAR")]' \
+		--log-uri s3://$(aws.bucket.name)/$(aws.log.dir) \
 		--service-role EMR_DefaultRole \
-		--ec2-attributes InstanceProfile=EMR_EC2_DefaultRole,SubnetId=${aws.subnet.id} \
-		--region ${aws.region} \
+		--ec2-attributes InstanceProfile=EMR_EC2_DefaultRole,SubnetId=$(aws.subnet.id) \
+		--region $(aws.region) \
 		--enable-debugging \
 		--auto-terminate
 
 # Download output from S3.
 download-output-aws: clean-local-output
-	mkdir ${local.output}
-	aws s3 sync s3://${aws.bucket.name}/${aws.output} ${local.output}
+	mkdir $(local.output)
+	aws s3 sync s3://$(aws.bucket.name)/$(aws.output) $(local.output)
 
 download-logs: 
-	mkdir ${local.logs}
-	aws s3 sync s3://${aws.bucket.name}/${aws.log.dir} ${local.logs}
+	mkdir $(local.logs)
+	aws s3 sync s3://$(aws.bucket.name)/$(aws.log.dir) $(local.logs)
 
 
 
