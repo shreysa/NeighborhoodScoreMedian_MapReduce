@@ -72,7 +72,7 @@ upload data to cluster master using scp or manual upload
 13. if copied using scp then put data on Hadoop HDFS
 14. Then run the job by : `make run INPUT=<input path> OUTPUT=<output path> NEIGHBORS=<KVALUE>`
 15. Collect the results and analyze
-16. The analysis of time taken for run of the map reduce job that I executed on the big dataset provided for assignment A2 is placed in Observations/aws.csv.
+16. The analysis of time taken for run of the map reduce job that I executed on the big dataset provided for assignment A2 is placed in Observations/aws_emr_data.csv.
 17. make clean removes all the *.class files and the target folder, useful for a clean build eg. "make run".
 
 
